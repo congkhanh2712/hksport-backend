@@ -1,41 +1,40 @@
 export default class Product {
-    id!: string | null;
-    detail: any = {
-        Name: String,
-        BrandID: String,
-        CategoryID: String,
-        Color: String,
-        CompetitionID: String,
-        Description: String,
-        Image: String,
-        Material: String,
-        Price: Number,
-        Product_Type: String,
-        Rating: Number,
-        Sold: Number,
-    };
-    size: any[] = [];
+    key: string | null;
+    Name: string;
+    BrandID: string;
+    CategoryID: string;
+    Color: string;
+    CompetitionID: string;
+    Description: string;
+    Image: string;
+    Material: string;
+    Price: number;
+    Product_Type: string;
+    Rating: number;
+    Source: string;
+    Sold: number;
+    Size = {};
     constructor(key: string | null, val: any) {
-        this.id = key;
-        this.detail.Name = val.Name;
-        this.detail.BrandID = val.BrandID;
-        this.detail.CategoryID = val.CategoryID;
-        this.detail.Color = val.Color;
-        this.detail.CompetitionID = val.CompetitionID;
-        this.detail.Description = val.Description;
-        this.detail.Image = val.Image;
-        this.detail.Material = val.Material;
-        this.detail.Price = val.Price;
-        this.detail.Product_Type = val.Product_Type;
-        this.detail.Rating = val.Rating;
-        this.detail.Sold = val.Sold;
+        this.key = key;
+        this.Name = val.Name;
+        this.BrandID = val.BrandID;
+        this.CategoryID = val.CategoryID;
+        this.Color = val.Color;
+        this.CompetitionID = val.CompetitionID;
+        this.Description = val.Description;
+        this.Image = val.Image;
+        this.Material = val.Material;
+        this.Price = val.Price;
+        this.Product_Type = val.Product_Type;
+        this.Rating = val.Rating;
+        if(val.Source == undefined || val.Source == ''){
+            this.Source = "Chưa cập nhật";
+        } else {
+            this.Source = val.Source;
+        }
+        this.Sold = val.Sold;
         if (val.Size != undefined) {
-            for (const[key,value] of Object.entries(val.Size)){
-                this.size.push({
-                    key: key,
-                    quantity: value,
-                })
-            }
+            this.Size = val.Size;
         }
     }
 }

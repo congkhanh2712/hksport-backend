@@ -26,9 +26,7 @@ router.get('', async (req: any, res: any) => {
 //Create Product
 router.post('', async (req: any, res: any) => {
     try {
-        await db.ref('TblProduct').push({
-            Name: req.body.name
-        });
+        await db.ref('TblProduct').push(req.body);
         return res.status(204).json()
     } catch (error) {
         return res.status(500).send(error);
@@ -38,8 +36,9 @@ router.post('', async (req: any, res: any) => {
 router.get('/:id', (req: any, res: any) => {
     (async () => {
         try {
-            db.ref('TblProduct').child(req.params.id).on('value', (val: any) => {
-                return res.status(200).json(val);
+            db.ref('TblProduct').child(req.params.id).on('value', (val) => {
+                var item = new Product(val.key, val.val());
+                return res.status(200).json(item);
             })
         } catch (error) {
             return res.status(500).send(error);
@@ -56,12 +55,16 @@ router.delete('/:id', async (req: any, res: any) => {
     }
 })
 //Update Product
-router.put('/:id', async (req: any, res: any) => {
+router.put('/:pid/', async (req: any, res: any) => {
     try {
-        await db.ref('TblProduct').child(req.params.id).update({
-            Name: req.body.name
+        db.ref('TblProduct').child(req.params.pid).update(req.body).then(() => {
+            return res.status(200).json({
+                message: "Update thành công",
+                succeed: true
+            });
+        }).catch((error) => {
+            console.log(error)
         });
-        return res.status(200).json();
     } catch (error) {
         return res.status(500).send(error);
     }
@@ -91,7 +94,7 @@ router.get('/topproduct/:quantity', async (req: any, res: any) => {
                 items.push(item);
             })
         })
-        return res.status(200).json(items);
+        return res.status(200).json(items.reverse());
     } catch (error) {
         return res.status(500).send(error);
     }
@@ -106,7 +109,7 @@ router.get('/category/:category_id', async (req: any, res: any) => {
                 items.push(item);
             })
         })
-        return res.status(200).json(items);
+        return res.status(200).json(items.reverse());
     } catch (error) {
         return res.status(500).send(error);
     }
