@@ -1,4 +1,4 @@
-export default class Product {
+export default class Competition {
     key: string | null;
     Banner: string;
     Link: string;

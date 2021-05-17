@@ -1,18 +1,20 @@
 export default class Voucher {
-    Code!: string;
-    DateEnd!: string;
-    DateStart!: string;
-    Description!: string;
-    Discount!: string;
-    Icon!: string;
-    Image!: string;
-    Limited!: number;
-    Max!: number;
-    Name!: string;
-    Role!: string;
-    Time!: number;
-    ValidFrom!: number;
-    constructor(val: any) {
+    key: string | null;
+    Code: string;
+    DateEnd: string;
+    DateStart: string;
+    Description: string;
+    Discount: string;
+    Icon: string;
+    Image: string;
+    Limited: number;
+    Max: number;
+    Name: string;
+    Role: string;
+    Time: number;
+    ValidFrom: number;
+    constructor(key: string | null, val: any) {
+        this.key = key;
         this.Code = val.Code;
         this.DateEnd = val.DateEnd;
         this.DateStart = val.DateStart;

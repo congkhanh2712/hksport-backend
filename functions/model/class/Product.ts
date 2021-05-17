@@ -17,24 +17,37 @@ export default class Product {
     constructor(key: string | null, val: any) {
         this.key = key;
         this.Name = val.Name;
-        this.BrandID = val.BrandID;
         this.CategoryID = val.CategoryID;
         this.Color = val.Color;
-        this.CompetitionID = val.CompetitionID;
-        this.Description = val.Description;
         this.Image = val.Image;
         this.Material = val.Material;
         this.Price = val.Price;
         this.Product_Type = val.Product_Type;
         this.Rating = val.Rating;
-        if(val.Source == undefined || val.Source == ''){
+        this.Sold = val.Sold;
+        if (val.Source == undefined || val.Source == '') {
             this.Source = "Chưa cập nhật";
         } else {
             this.Source = val.Source;
         }
-        this.Sold = val.Sold;
         if (val.Size != undefined) {
             this.Size = val.Size;
+        }
+        if (val.BrandID != '') {
+            this.BrandID = val.BrandID;
+        }
+        else {
+            this.BrandID = 'Chưa cập nhật';
+        }
+        if (val.Description != '') {
+            this.Description = val.Description;
+        } else {
+            this.Description = 'Chưa cập nhật';
+        }
+        if (val.CompetitionID != undefined) {
+            this.CompetitionID = val.CompetitionID;
+        } else {
+            this.CompetitionID = '';
         }
     }
 }

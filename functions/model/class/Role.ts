@@ -1,4 +1,4 @@
-export default class Product {
+export default class Role {
     key: string | null;
     Benefit={};
     Name: string;

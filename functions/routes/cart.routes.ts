@@ -1,4 +1,4 @@
-import { database } from "firebase-admin";
+import { database, auth } from "firebase-admin";
 
 const { Router } = require('express');
 const router = Router();
@@ -6,77 +6,144 @@ const router = Router();
 const db = database()
 
 //Get cart
-router.get('/:uid', async (req: any, res: any) => {
+router.get('', async (req: any, res: any) => {
     try {
-        var items: any[] = [];
-        await db.ref('TblCart').child(req.params.uid).once('value', (snap: any) => {
-            snap.forEach((child: any) => {
-                if (child.key != 'Status') {
-                    items.push(child.val())
-                }
+        auth().verifyIdToken(req.headers['x-access-token'], true)
+            .then(async (decodeToken) => {
+                var items: any[] = [];
+                await db.ref('TblCart').child(decodeToken.uid)
+                    .orderByChild('Time')
+                    .once('value', (snap: any) => {
+                        snap.forEach((child: any) => {
+                            if (child.key != 'Status') {
+                                items.push(child.val())
+                            }
+                        })
+                    })
+                return res.status(200).json(items.reverse());
+            }).catch((error) => {
+                return res.status(401).json({
+                    code: error.errorInfo.code
+                });
             })
-        })
-        return res.status(200).json(items);
     } catch (error) {
         return res.status(500).send(error);
     }
 })
 //Add item to cart
-router.post('/:uid', async (req: any, res: any) => {
-    const { image, pid, name, price, size, quantity } = req.body;
+router.post('', async (req: any, res: any) => {
+    const { Image, ProductID, Name, Price, Size, Quantity } = req.body;
     try {
-        var nowquantity = 0;
-        db.ref('TblCart').child(req.params.uid).update({
-            Status: true,
-        })
-        await db.ref('TblCart').child(req.params.uid).child(pid + size).child('Quantity').once('value', (val) => {
-            if (val.val() != null) {
-                nowquantity = val.val();
-            }
-        })
-        await db.ref('TblCart').child(req.params.uid).child(pid + size).set({
-            Image: image,
-            Name: name,
-            ProductID: pid,
-            Price: parseInt(price),
-            Quantity: parseInt(quantity) + nowquantity,
-            Size: size,
-        })
-        return res.status(200).json({
-            succeed: true,
-            message: "Đã thêm sản phẩm vào giỏ hàng"
-        });
+        auth().verifyIdToken(req.headers['x-access-token'], true)
+            .then(async (decodeToken) => {
+                var nowquantity = 0;
+                db.ref('TblCart').child(decodeToken.uid).update({
+                    Status: true,
+                })
+                await db.ref('TblCart').child(decodeToken.uid).child(ProductID + Size).child('Quantity').once('value', (val) => {
+                    if (val.val() != null) {
+                        nowquantity = val.val();
+                    }
+                })
+                await db.ref('TblCart').child(decodeToken.uid).child(ProductID + Size).set({
+                    Image: Image,
+                    Name: Name,
+                    ProductID: ProductID,
+                    Price: parseInt(Price),
+                    Quantity: parseInt(Quantity) + nowquantity,
+                    Size: Size,
+                    Time: database.ServerValue.TIMESTAMP,
+                })
+                return res.status(200).json({
+                    succeed: true,
+                    message: "Đã thêm sản phẩm vào giỏ hàng"
+                });
+            }).catch((error) => {
+                return res.status(401).json({
+                    code: error.errorInfo.code
+                });
+            })
     } catch (error) {
         return res.status(500).send(error);
     }
 })
 //Remove Cart
-router.delete('/:uid', async (req: any, res: any) => {
+router.delete('', async (req: any, res: any) => {
     try {
-        await db.ref('TblCart').child(req.params.uid).set({
-            Status: false,
-        })
-        return res.status(200).json({
-            succeed: true,
-            message: "Đã xóa giỏ hàng"
-        });
+        auth().verifyIdToken(req.headers['x-access-token'], true)
+            .then(async (decodeToken) => {
+                await db.ref('TblCart').child(decodeToken.uid).set({
+                    Status: false,
+                })
+                return res.status(200).json({
+                    succeed: true,
+                    message: "Đã xóa giỏ hàng"
+                });
+            }).catch((error) => {
+                return res.status(401).json({
+                    code: error.errorInfo.code
+                });
+            })
     } catch (error) {
         return res.status(500).send(error);
     }
 })
 //Remove item from cart
-router.put('/:uid', async (req: any, res: any) => {
+router.put('', async (req: any, res: any) => {
     try {
-        const { pid, size } = req.body;
-        await db.ref('TblCart').child(req.params.uid).child(pid + size).remove();
-        return res.status(200).json({
-            succeed: true,
-            message: "Đã xóa sản phẩm khỏi giỏ hàng"
-        });
+        const { pid, size, quantity } = req.body;
+        if (quantity == 0) {
+            auth().verifyIdToken(req.headers['x-access-token'], true)
+                .then(async (decodeToken) => {
+                    await db.ref('TblCart').child(decodeToken.uid).child(pid + size).remove();
+                    return res.status(200).json({
+                        succeed: true,
+                        message: "Đã update thành công"
+                    });
+                }).catch((error) => {
+                    return res.status(401).json({
+                        code: error.errorInfo.code
+                    });
+                })
+        } else {
+            auth().verifyIdToken(req.params.token, true)
+                .then(async (decodeToken) => {
+                    db.ref('TblCart').child(decodeToken.uid).child(pid + size).update({
+                        Quantity: quantity
+                    });
+                    return res.status(200).json({
+                        succeed: true,
+                        message: "Đã update thành công"
+                    });
+                }).catch((error) => {
+                    return res.status(401).json({
+                        code: error.errorInfo.code
+                    });
+                })
+        }
     } catch (error) {
         return res.status(500).send(error);
     }
 })
+//Get user's cart length
+router.get('/length', async (req: any, res: any) => {
+    auth().verifyIdToken(req.headers['x-access-token'], true)
+        .then(async (decodeToken) => {
+            var length = 0;
+            await db.ref('TblCart').child(decodeToken.uid).once('value', (snapshot) => {
+                length = snapshot.numChildren() - 1;
+            })
+            return res.status(200).json({
+                succeed: true,
+                length: length,
+            });
+        }).catch((error) => {
+            return res.status(401).json({
+                code: error.errorInfo.code
+            });
+        })
+})
+
 
 
 

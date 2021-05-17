@@ -20,9 +20,9 @@ router.get('', async (req: any, res: any) => {
 })
 router.get('/:page', async (req: any, res: any) => {
     try {
-        const { page } = req.parmas;
+        const { page } = req.params;
         var items: Category[] = [];
-        await database().ref('TblCategory').orderByChild('Name').limitToLast(page * 3).once('value', (snap) => {
+        await database().ref('TblCategory').orderByChild('Name').limitToLast(parseInt(page) * 3).once('value', (snap) => {
             snap.forEach(child => {
                 var item = new Category(child.key, child.val())
                 items.push(item);

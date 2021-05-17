@@ -1,8 +1,8 @@
-import { database } from "firebase-admin";
+import { database, auth } from "firebase-admin";
+import User from '../model/class/User';
 const { Router } = require('express');
 const router = Router();
 const firebase = require('firebase');
-const fb = require('firebase/app');
 var fbApp = firebase.default.initializeApp({
     apiKey: "AIzaSyBf-gNwY6RWVHEwGNC5Vlm5_jkqxICT8sk",
     authDomain: "tlcnproject.firebaseapp.com",
@@ -16,7 +16,7 @@ var fbApp = firebase.default.initializeApp({
 //Login
 router.post('/login', async (req: any, res: any) => {
     try {
-        fbApp.auth().signInWithEmailAndPassword(req.body.email, req.body.password).then(() => {
+        fbApp.auth().signInWithEmailAndPassword(req.body.email, req.body.password).then(async () => {
             return res.status(200).json({
                 succeed: true,
                 message: 'Đăng nhập thành công',
@@ -35,7 +35,6 @@ router.post('/login', async (req: any, res: any) => {
 //Register
 router.post('/register', async (req: any, res: any) => {
     const { email, password, name, phone, address, city, location, district, ward } = req.body
-    console.log(req.body)
     try {
         fbApp.auth().createUserWithEmailAndPassword(email, password).then(async () => {
             //Set thông tin khách hàng
@@ -45,6 +44,7 @@ router.post('/register', async (req: any, res: any) => {
                 Role: '-MOgFiH4LPenx6Kqq0Nu',
                 PointAvailable: 0,
                 Point: 0,
+                Token: '',
             })
             //Set địa chỉ khách hàng
             await database().ref('TblCustomer').child(fbApp.auth().currentUser.uid).child('Address').update({
@@ -78,81 +78,88 @@ router.post('/register', async (req: any, res: any) => {
 })
 //Logout
 router.post('/logout', async (req: any, res: any) => {
-    console.log(fbApp.auth().currentUser.uid)
     try {
-        fbApp.auth().signOut().then(() => {
-            return res.status(200).json({
-                succeed: true,
-                message: 'Đăng xuất thành công'
+        auth().verifyIdToken(req.headers['x-access-token'], true)
+            .then(async (decodeToken) => {
+                auth().revokeRefreshTokens(decodeToken.uid)
+                    .then(() => {
+                        return res.status(200).json({
+                            succeed: true,
+                            message: "Đăng xuất thành công",
+                        });
+                    })
+            }).catch((error) => {
+                return res.status(401).json({
+                    code: error.errorInfo.code
+                });
             })
-        }).catch((error: any) => {
-            return res.status(200).json({
-                succeed: false,
-                message: error,
-            });
-        })
     } catch (error) {
         return res.status(500).send(error);
     }
 })
 //Get Current User
-router.get('/:uid', async (req: any, res: any) => {
+router.get('', async (req: any, res: any) => {
     try {
-        var user = {
-            name: '',
-            phone: '',
-            role: '',
-            point: 0,
-            pointAvailable: 0,
-            color: '',
-            tab: '',
-        }
-        await database().ref('TblCustomer').child(req.params.uid).once('value', async (snap) => {
-            user.name = snap.val().Name;
-            user.phone = snap.val().Phone_Number;
-            user.point = snap.val().Point;
-            user.pointAvailable = snap.val().PointAvailable;
-            user.tab = snap.val().Role;
-        })
-        await database().ref('TblRole').child(user.tab).once('value', child => {
-            user.role = child.val().Name;
-            user.color = child.val().Color;
-        })
-        return res.status(200).json(user);
+        auth().verifyIdToken(req.headers['x-access-token'], true)
+            .then(async (decodeToken) => {
+                await database().ref('TblCustomer').child(decodeToken.uid).once('value', async (snap) => {
+                    let user = new User(snap.val());
+                    user.email = decodeToken.email;
+                    await database().ref('TblRole').child(snap.val().Role).once('value', child => {
+                        user.rolename = child.val().Name
+                        user.color = child.val().Color;
+                    })
+                    await auth().getUser(decodeToken.uid).then(res=>{
+                        user.createdate = res.metadata.creationTime;
+                    })
+                    return res.status(200).json(user);
+                })
+            }).catch((error) => {
+                return res.status(401).json({
+                    code: error.errorInfo.code
+                });
+            })
     } catch (error) {
         return res.status(500).send(error);
     }
 })
 //Change Password
-function reauthenticate(email: string, password: string) {
-    var user = fbApp.auth().currentUser;
-    var cred = fb.default.auth.EmailAuthProvider.credential(email, password);
-    return user.reauthenticateWithCredential(cred);
-}
-router.put('/change-password', async (req: any, res: any) => {
-    console.log(fbApp.auth().currentUser.uid)
-    const { email, currentPass, newPass } = req.body;
+router.put('/info/change-password', async (req: any, res: any) => {
+    const { currentPass, newPass } = req.body;
     try {
-        reauthenticate(email, currentPass)
-            .then(() => {
-                fbApp.auth().currentUser.updatePassword(newPass)
-                    .then(() => {
-                        return res.status(200).json({
-                            succeed: true,
-                            message: 'Đổi mật khẩu thành công'
-                        });
-                    })
-                    .catch(()=>{
-                        return res.status(200).json({
-                            succeed: true,
-                            message: 'Đổi mật khẩu thật bại'
-                        });
-                    })
-            })
-            .catch(() => {
-                return res.status(200).json({
-                    succeed: true,
-                    message: 'Mật khẩu hiện tại không đúng'
+        auth().verifyIdToken(req.headers['x-access-token'], true)
+            .then(async (decodeToken) => {
+                if (decodeToken.email != undefined && decodeToken.email != newPass) {
+                    fbApp.auth().signInWithEmailAndPassword(decodeToken.email, currentPass)
+                        .then(() => {
+                            fbApp.auth().currentUser.updatePassword(newPass)
+                                .then(() => {
+                                    return res.status(200).json({
+                                        succeed: true,
+                                        message: 'Đổi mật khẩu thành công'
+                                    });
+                                })
+                                .catch(() => {
+                                    return res.status(200).json({
+                                        succeed: false,
+                                        message: 'Đổi mật khẩu thật bại'
+                                    });
+                                })
+                        }).catch(() => {
+                            return res.status(200).json({
+                                succeed: false,
+                                message: 'Mật khẩu hiện tại không đúng'
+                            });
+                        })
+                } else {
+                    return res.status(200).json({
+                        succeed: false,
+                        message: 'Vui lòng không đặt mật khẩu giống email đăng nhập'
+                    });
+                }
+            }).catch((error) => {
+                return res.status(401).json({
+                    code: error.errorInfo.code
                 });
             })
     } catch (error) {
@@ -160,36 +167,68 @@ router.put('/change-password', async (req: any, res: any) => {
     }
 })
 //Update User info
-router.put('/:uid', async (req: any, res: any) => {
+router.put('/info/update', async (req: any, res: any) => {
     try {
-        const { name, phone } = req.body;
-        await database().ref('TblCustomer').child(req.params.uid).update({
-            Name: name,
-            Phone_Number: phone
-        })
-        return res.status(200).json({
-            succeed: true,
-            message: 'Cập nhật thành công'
-        });
+        auth().verifyIdToken(req.headers['x-access-token'], true)
+            .then(async (decodeToken) => {
+                await database().ref('TblCustomer').child(decodeToken.uid).update(req.body)
+                return res.status(200).json({
+                    succeed: true,
+                    message: 'Cập nhật thành công'
+                });
+            }).catch((error) => {
+                return res.status(401).json({
+                    code: error.errorInfo.code
+                });
+            })
     } catch (error) {
         return res.status(500).send(error);
     }
 })
 //Update user address
-router.put('/update-address/:uid', async (req: any, res: any) => {
+router.put('/info/update-address', async (req: any, res: any) => {
     try {
         const { address, ward, district, city, location } = req.body;
-        await database().ref('TblCustomer').child(req.params.uid).child('Address').update({
-            Detail: address,
-            Ward: ward,
-            District: district,
-            City: city,
-            Location: location,
-        })
-        return res.status(200).json({
-            succeed: true,
-            message: 'Cập nhật thành công'
-        });
+        auth().verifyIdToken(req.headers['x-access-token'], true)
+            .then(async (decodeToken) => {
+                await database().ref('TblCustomer').child(decodeToken.uid).child('Address').update({
+                    Detail: address,
+                    Ward: ward,
+                    District: district,
+                    City: city,
+                    Location: location,
+                })
+                return res.status(200).json({
+                    succeed: true,
+                    message: 'Cập nhật thành công'
+                });
+            }).catch((error) => {
+                return res.status(401).json({
+                    code: error.errorInfo.code
+                });
+            })
+    } catch (error) {
+        return res.status(500).send(error);
+    }
+})
+//Update user's device token
+router.put('/info/device-token', async (req: any, res: any) => {
+    try {
+        const { token } = req.body;
+        auth().verifyIdToken(req.headers['x-access-token'], true)
+            .then(async (decodeToken) => {
+                await database().ref('TblCustomer').child(decodeToken.uid).update({
+                    Token: token
+                })
+                return res.status(200).json({
+                    succeed: true,
+                    message: 'Cập nhật thành công'
+                });
+            }).catch((error) => {
+                return res.status(401).json({
+                    code: error.errorInfo.code
+                });
+            })
     } catch (error) {
         return res.status(500).send(error);
     }

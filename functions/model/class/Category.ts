@@ -1,4 +1,4 @@
-export default class Product {
+export default class Category {
     key: string | null;
     Icon: string;
     Image: string;

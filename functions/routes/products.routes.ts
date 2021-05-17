@@ -36,7 +36,7 @@ router.post('', async (req: any, res: any) => {
 router.get('/:id', (req: any, res: any) => {
     (async () => {
         try {
-            db.ref('TblProduct').child(req.params.id).on('value', (val) => {
+            db.ref('TblProduct').child(req.params.id).once('value', (val) => {
                 var item = new Product(val.key, val.val());
                 return res.status(200).json(item);
             })
@@ -55,7 +55,7 @@ router.delete('/:id', async (req: any, res: any) => {
     }
 })
 //Update Product
-router.put('/:pid/', async (req: any, res: any) => {
+router.put('/:pid', async (req: any, res: any) => {
     try {
         db.ref('TblProduct').child(req.params.pid).update(req.body).then(() => {
             return res.status(200).json({
@@ -70,16 +70,19 @@ router.put('/:pid/', async (req: any, res: any) => {
     }
 })
 //Get Related Product
-router.get('/protype/:type_id', async (req: any, res: any) => {
+router.get('/protype/:type_id/:page', async (req: any, res: any) => {
     try {
         var items: Product[] = [];
-        await db.ref('TblProduct').orderByChild('Product_Type').equalTo(req.params.type_id).once('value', (snap) => {
-            snap.forEach((child) => {
-                var item = new Product(child.key, child.val());
-                items.push(item);
+        const { type_id, page } = req.params;
+        await db.ref('TblProduct')
+            .orderByChild('Product_Type').equalTo(type_id)
+            .limitToLast(parseInt(page) * 4).once('value', (snap) => {
+                snap.forEach((child) => {
+                    var item = new Product(child.key, child.val());
+                    items.push(item);
+                })
             })
-        })
-        return res.status(200).json(items);
+        return res.status(200).json(items.reverse());
     } catch (error) {
         return res.status(500).send(error);
     }
@@ -161,11 +164,121 @@ router.get('/:competition_id/:protype/:category_id/:page', async (req: any, res:
                 }
             })
         })
-        return res.status(200).json(items);
+        return res.status(200).json(items.reverse());
     } catch (error) {
         return res.status(500).send(error);
     }
 })
+//Get tblproducts length
+router.get('/product/length', async (req: any, res: any) => {
+    try {
+        var length = 0;
+        await db.ref('TblProduct').once('value', (snapshot) => {
+            length = snapshot.numChildren();
+        })
+        return res.status(200).json({
+            succeed: true,
+            length: length,
+        });
+    } catch (error) {
+        return res.status(500).send(error);
+    }
+})
+//Update sold property and quantity property of products (when user cancel order)
+router.put('', async (req: any, res: any) => {
+    try {
+        const { orderdetail, type } = req.body;
+        if (parseInt(type) == 1) {
+            for (let i = 0; i < orderdetail.length; i++) {
+                var sold = 0
+                await database().ref('TblProduct').child(orderdetail[i].ProductID).child('Sold').once('value', data => {
+                    sold = data.val()
+                });
+                database().ref('TblProduct').child(orderdetail[i].ProductID).update({
+                    Sold: sold + orderdetail[i].Quantity
+                })
+                var nowquantity = 0
+                await database().ref('TblProduct')
+                    .child(orderdetail[i].ProductID).child('Size').child(orderdetail[i].Size)
+                    .once('value', data => {
+                        nowquantity = data.val();
+                    })
+                database().ref('TblProduct').
+                    child(orderdetail[i].ProductID).child('Size').child(orderdetail[i].Size).
+                    set(nowquantity - orderdetail[i].Quantity);
+            }
+        } else {
+            for (let i = 0; i < orderdetail.length; i++) {
+                var sold = 0
+                await database().ref('TblProduct').child(orderdetail[i].ProductID).child('Sold').once('value', data => {
+                    sold = data.val()
+                });
+                database().ref('TblProduct').child(orderdetail[i].ProductID).update({
+                    Sold: sold - orderdetail[i].Quantity
+                })
+                var nowquantity = 0
+                await database().ref('TblProduct')
+                    .child(orderdetail[i].ProductID).child('Size').child(orderdetail[i].Size)
+                    .once('value', data => {
+                        nowquantity = data.val();
+                    })
+                database().ref('TblProduct').
+                    child(orderdetail[i].ProductID).child('Size').child(orderdetail[i].Size).
+                    set(nowquantity + orderdetail[i].Quantity);
+            }
+            return res.status(200).json({
+                succeed: true,
+                message: "Update thành công"
+            });
+        }
+    } catch (error) {
+        return res.status(500).send(error);
+    }
+})
+//Get color list
+router.get('/list/colors', async (req: any, res: any) => {
+    try {
+        var colors: any[] = [];
+        await database().ref('TblProduct').once('value', snapshot => {
+            snapshot.forEach(child => {
+                if (child.val().Color != undefined
+                    && colors.indexOf(child.val().Color.toLowerCase()) == -1
+                    && colors.length < req.query.page * 4 - 1) {
+                    colors.push(child.val().Color.toLowerCase())
+                }
+            })
+        })
+        return res.status(200).json({
+            succeed: true,
+            list: colors,
+        });
+    } catch (error) {
+        return res.status(500).send(error);
+    }
+})
+//Get material list
+router.get('/list/materials', async (req: any, res: any) => {
+    try {
+        var materials: any[] = [];
+        await database().ref('TblProduct').once('value', snapshot => {
+            snapshot.forEach(child => {
+                if (child.val().Material != undefined
+                    && materials.indexOf(child.val().Material.toLowerCase()) == -1
+                    && materials.length < req.query.page * 4 - 1) {
+                    materials.push(child.val().Material.toLowerCase())
+                }
+            })
+        })
+        return res.status(200).json({
+            succeed: true,
+            list: materials,
+        });
+    } catch (error) {
+        return res.status(500).send(error);
+    }
+})
+
+
 
 
 

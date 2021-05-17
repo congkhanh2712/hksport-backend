@@ -1,4 +1,4 @@
-export default class Product {
+export default class ProductType {
     key: string | null;
     BrandID: string;
     CategoryID: string;

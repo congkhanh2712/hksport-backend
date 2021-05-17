@@ -1,5 +1,5 @@
 export default class Order {
-    id!: string;
+    key: string | null;
     Comment: String;
     Note: String;
     OrderDate: String;
@@ -18,8 +18,11 @@ export default class Order {
     Discount: Number;
     Voucher: String;
     Address = {};
-    constructor(key: string, val: any) {
-        this.id = key;
+    OrderDetail: any[] = [];
+    Timeline: any[] = [];
+    Received=false;
+    constructor(key: string | null, val: any) {
+        this.key = key;
         this.Address = val.Address;
         this.Comment = val.Comment;
         this.Note = val.Note;
@@ -34,7 +37,11 @@ export default class Order {
         this.Rating = val.Rating;
         this.Payments = val.Payments;
         this.Voucher = val.Voucher;
-        this.Discount = val.Discount;
+        if (val.Discount != undefined) {
+            this.Discount = val.Discount;
+        } else {
+            this.Discount = 0;
+        }
         if (val.PointUsed != undefined) {
             this.PointUsed = val.PointUsed;
         } else {
@@ -46,5 +53,21 @@ export default class Order {
             this.RefundRate = 0;
         }
         this.OrderTime = val.OrderTime;
+        for (const [key, value] of Object.entries(val.OrderDetail)) {
+            console.log(key);
+            this.OrderDetail.push(value);
+        }
+    }
+    public get timeline() {
+        return this.Timeline;
+    }
+    public set timeline(obj: any) {
+        this.Timeline = obj;
+    }
+    public get received(){
+        return this.Received;
+    }
+    public set received(Received: boolean){
+        this.Received == Received;
     }
 }
