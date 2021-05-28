@@ -14,6 +14,7 @@ router.get('', async (req: any, res: any) => {
                 items.push(item);
             })
         })
+        console.log(items);
         return res.status(200).json(items);
     } catch (error) {
         return res.status(500).send(error);

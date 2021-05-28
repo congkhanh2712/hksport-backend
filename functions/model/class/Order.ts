@@ -68,6 +68,6 @@ export default class Order {
         return this.Received;
     }
     public set received(Received: boolean){
-        this.Received == Received;
+        this.Received = Received;
     }
 }

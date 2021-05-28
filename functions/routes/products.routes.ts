@@ -97,6 +97,7 @@ router.get('/topproduct/:quantity', async (req: any, res: any) => {
                 items.push(item);
             })
         })
+        res.setHeader('Access-Control-Allow-Origin', '*')
         return res.status(200).json(items.reverse());
     } catch (error) {
         return res.status(500).send(error);
@@ -242,9 +243,10 @@ router.get('/list/colors', async (req: any, res: any) => {
         await database().ref('TblProduct').once('value', snapshot => {
             snapshot.forEach(child => {
                 if (child.val().Color != undefined
-                    && colors.indexOf(child.val().Color.toLowerCase()) == -1
-                    && colors.length < req.query.page * 4 - 1) {
-                    colors.push(child.val().Color.toLowerCase())
+                    && colors.indexOf(child.val().Color.toLowerCase()) == -1) {
+                    if (colors.length < req.query.page * 4 - 1 || req.query.page == 0) {
+                        colors.push(child.val().Color.toLowerCase())
+                    }
                 }
             })
         })
@@ -263,9 +265,10 @@ router.get('/list/materials', async (req: any, res: any) => {
         await database().ref('TblProduct').once('value', snapshot => {
             snapshot.forEach(child => {
                 if (child.val().Material != undefined
-                    && materials.indexOf(child.val().Material.toLowerCase()) == -1
-                    && materials.length < req.query.page * 4 - 1) {
-                    materials.push(child.val().Material.toLowerCase())
+                    && materials.indexOf(child.val().Material.toLowerCase()) == -1) {
+                    if (materials.length < req.query.page * 4 - 1 || req.query.page == 0) {
+                        materials.push(child.val().Material.toLowerCase())
+                    }
                 }
             })
         })

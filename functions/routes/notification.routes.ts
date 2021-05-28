@@ -17,13 +17,23 @@ router.get('', async (req: any, res: any) => {
                     .once('value', (snap) => {
                         length = snap.numChildren();
                     })
-                await database().ref('TblNotification')
-                    .child(decodeToken.uid).limitToLast(parseInt(page) * 10)
-                    .once('value', (snap) => {
-                        snap.forEach((child) => {
-                            items.push(new Notification(child.key, child.val()))
+                if (page != 0) {
+                    await database().ref('TblNotification')
+                        .child(decodeToken.uid).limitToLast(parseInt(page) * 10)
+                        .once('value', (snap) => {
+                            snap.forEach((child) => {
+                                items.push(new Notification(child.key, child.val()))
+                            })
                         })
-                    })
+                } else {
+                    await database().ref('TblNotification')
+                        .child(decodeToken.uid)
+                        .once('value', (snap) => {
+                            snap.forEach((child) => {
+                                items.push(new Notification(child.key, child.val()))
+                            })
+                        })
+                }
                 return res.status(200).json({
                     succeed: true,
                     list: items.reverse(),

@@ -34,7 +34,7 @@ router.post('/login', async (req: any, res: any) => {
 })
 //Register
 router.post('/register', async (req: any, res: any) => {
-    const { email, password, name, phone, address, city, location, district, ward } = req.body
+    const { email, password, name, phone, address, city, location, district, ward, avatar } = req.body
     try {
         fbApp.auth().createUserWithEmailAndPassword(email, password).then(async () => {
             //Set thông tin khách hàng
@@ -45,6 +45,7 @@ router.post('/register', async (req: any, res: any) => {
                 PointAvailable: 0,
                 Point: 0,
                 Token: '',
+                Avatar: avatar,
             })
             //Set địa chỉ khách hàng
             await database().ref('TblCustomer').child(fbApp.auth().currentUser.uid).child('Address').update({
@@ -97,6 +98,25 @@ router.post('/logout', async (req: any, res: any) => {
         return res.status(500).send(error);
     }
 })
+//Forget Password
+router.post('/forget-password', async (req: any, res: any) => {
+    try {
+        fbApp.auth().sendPasswordResetEmail(req.body.email)
+            .then(() => {
+                return res.status(200).json({
+                    succeed: true,
+                    message: "Link đặt lại mật khẩu vừa được gửi tới mail của bạn. Vui lòng kiểm tra!!"
+                });
+            }).catch((error: any) => {
+                return res.status(200).json({
+                    succeed: false,
+                    message: error.message
+                });
+            });
+    } catch (error) {
+        return res.status(500).send(error);
+    }
+})
 //Get Current User
 router.get('', async (req: any, res: any) => {
     try {
@@ -105,11 +125,16 @@ router.get('', async (req: any, res: any) => {
                 await database().ref('TblCustomer').child(decodeToken.uid).once('value', async (snap) => {
                     let user = new User(snap.val());
                     user.email = decodeToken.email;
-                    await database().ref('TblRole').child(snap.val().Role).once('value', child => {
-                        user.rolename = child.val().Name
-                        user.color = child.val().Color;
-                    })
-                    await auth().getUser(decodeToken.uid).then(res=>{
+                    if (snap.val().Role != 'Admin') {
+                        await database().ref('TblRole').child(snap.val().Role).once('value', child => {
+                            user.rolename = child.val().Name
+                            user.color = child.val().Color;
+                        })
+                    } else {
+                        user.rolename = "Admin";
+                        user.color = '#FF4732'
+                    }
+                    await auth().getUser(decodeToken.uid).then(res => {
                         user.createdate = res.metadata.creationTime;
                     })
                     return res.status(200).json(user);

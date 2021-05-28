@@ -14,15 +14,26 @@ router.get('/:pid', async (req: any, res: any) => {
         .once('value', (snapshot) => {
             length = snapshot.numChildren();
         })
-    await db.ref('TblRating')
-        .orderByChild('ProductID').equalTo(req.params.pid)
-        .limitToLast(parseInt(req.query.page) * 4)
-        .once('value', async (snapshot) => {
-            snapshot.forEach(child => {
-                var item = new Rating(child.key, child.val());
-                items.push(item);
+    if (parseInt(req.query.page) != 0) {
+        await db.ref('TblRating')
+            .orderByChild('ProductID').equalTo(req.params.pid)
+            .limitToLast(parseInt(req.query.page) * 4)
+            .once('value', async (snapshot) => {
+                snapshot.forEach(child => {
+                    var item = new Rating(child.key, child.val());
+                    items.push(item);
+                })
             })
-        })
+    } else {
+        await db.ref('TblRating')
+            .orderByChild('ProductID').equalTo(req.params.pid)
+            .once('value', async (snapshot) => {
+                snapshot.forEach(child => {
+                    var item = new Rating(child.key, child.val());
+                    items.push(item);
+                })
+            })
+    }
     for (let i = 0; i < items.length; i++) {
         await db.ref('TblCustomer').child(items[i].User).child('Name')
             .once('value', (data) => {
@@ -91,17 +102,31 @@ router.get('/replied/:pid', async (req: any, res: any) => {
                 length = 0;
             }
         })
-    await db.ref('TblRating').child(req.params.pid).child('Replied')
-        .limitToLast(parseInt(req.query.page) * 6).once('value', (snapshot) => {
-            snapshot.forEach((child) => {
-                items.push({
-                    key: child.key,
-                    detail: child.val(),
-                    Username: '',
-                    isMe: false,
+    if (parseInt(req.query.page) != 0) {
+        await db.ref('TblRating').child(req.params.pid).child('Replied')
+            .limitToLast(parseInt(req.query.page) * 6).once('value', (snapshot) => {
+                snapshot.forEach((child) => {
+                    items.push({
+                        key: child.key,
+                        detail: child.val(),
+                        Username: '',
+                        isMe: false,
+                    })
                 })
             })
-        })
+    } else {
+        await db.ref('TblRating').child(req.params.pid).child('Replied')
+            .once('value', (snapshot) => {
+                snapshot.forEach((child) => {
+                    items.push({
+                        key: child.key,
+                        detail: child.val(),
+                        Username: '',
+                        isMe: false,
+                    })
+                })
+            })
+    }
     for (let i = 0; i < items.length; i++) {
         await db.ref('TblCustomer').child(items[i].detail.User).child('Name')
             .once('value', (data) => {
@@ -228,13 +253,12 @@ router.post('/replied/:rid', async (req: any, res: any) => {
                         }
                     })
                 }
-                console.log(tokens);
                 messaging().sendMulticast({
                     notification: {
                         body: '1 bình luận mới vừa được thêm vào bài viết bạn đang theo dõi',
                         title: 'Thông báo',
                     },
-                    data:{
+                    data: {
                         type: 'Comment',
                         id: req.params.rid,
                     },

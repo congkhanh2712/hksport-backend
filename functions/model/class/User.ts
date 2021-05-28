@@ -10,6 +10,7 @@ export default class User {
     Token: string;
     Color = '';
     CreateDate = '';
+    Avatar = '';
     constructor(val: any) {
         this.Name = val.Name;
         this.Phone_Number = val.Phone_Number;
@@ -21,6 +22,9 @@ export default class User {
             this.Token = val.Token;
         } else {
             this.Token = '';
+        }
+        if (val.Avatar != undefined) {
+            this.Avatar = val.Avatar;
         }
     }
     public get rolename() {

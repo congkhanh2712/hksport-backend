@@ -131,7 +131,11 @@ router.get('/length', async (req: any, res: any) => {
         .then(async (decodeToken) => {
             var length = 0;
             await db.ref('TblCart').child(decodeToken.uid).once('value', (snapshot) => {
-                length = snapshot.numChildren() - 1;
+                if (snapshot.numChildren() - 1 >= 0) {
+                    length = snapshot.numChildren() - 1;
+                } else {
+                    length = 0
+                }
             })
             return res.status(200).json({
                 succeed: true,

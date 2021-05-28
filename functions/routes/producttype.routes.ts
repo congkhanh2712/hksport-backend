@@ -13,7 +13,21 @@ router.get('', async (req: any, res: any) => {
                 items.push(item);
             })
         })
-        return res.status(200).json(items);
+        var length = 0;
+        await database().ref('TblProductType')
+            .once('value', (val) => length = val.numChildren())
+        var temp = items;
+        for (let i = 0; i < temp.length; i++) {
+            const length = await ProtypeCheck(temp[i].key)
+            if (length == 0) {
+                items = items.filter(e => e.key !== temp[i].key)
+            }
+        }
+        return res.status(200).json({
+            succeed: true,
+            list: items.reverse(),
+            length: length,
+        });
     } catch (error) {
         return res.status(500).send(error);
     }
@@ -27,71 +41,6 @@ async function ProtypeCheck(key: string | null) {
         })
     return length
 }
-router.get('/:page', async (req: any, res: any) => {
-    console.log('I am here');
-    try {
-        const { page } = req.params;
-        var items: ProductType[] = [];
-        await database().ref('TblProductType')
-            .orderByKey()
-            .limitToLast(parseInt(page) * 5).once('value', async (snap) => {
-                snap.forEach(child => {
-                    var item = new ProductType(child.key, child.val());
-                    items.push(item);
-                })
-                var length = 0;
-                await database().ref('TblProductType')
-                    .orderByKey()
-                    .once('value', (val) => length = val.numChildren())
-                var temp = items;
-                for (let i = 0; i < temp.length; i++) {
-                    const length = await ProtypeCheck(temp[i].key)
-                    if (length == 0) {
-                        items = items.filter(e => e.key !== temp[i].key)
-                    }
-                }
-                return res.status(200).json({
-                    succeed: true,
-                    list: items.reverse(),
-                    length: length,
-                });
-            })
-    } catch (error) {
-        return res.status(500).send(error);
-    }
-})
-router.get('/:page/:cid', async (req: any, res: any) => {
-    try {
-        const { page, cid } = req.params;
-        var items: ProductType[] = [];
-        await database().ref('TblProductType')
-            .orderByChild('CategoryID').equalTo(cid)
-            .limitToLast(parseInt(page)* 5).once('value', async (snap) => {
-                snap.forEach(child => {
-                    var item = new ProductType(child.key, child.val())
-                    items.push(item);
-                })
-                var length = 0;
-                await database().ref('TblProductType')
-                    .orderByChild('CategoryID').equalTo(cid)
-                    .once('value', (val) => length = val.numChildren())
-                var temp = items;
-                for (let i = 0; i < temp.length; i++) {
-                    const length = await ProtypeCheck(temp[i].key)
-                    if (length == 0) {
-                        items = items.filter(e => e.key !== temp[i].key)
-                    }
-                }
-                return res.status(200).json({
-                    succeed: true,
-                    list: items.reverse(),
-                    length: length,
-                });
-            })
-    } catch (error) {
-        return res.status(500).send(error);
-    }
-})
 router.post('', async (req: any, res: any) => {
     try {
         await database().ref('TblProductType').push(req.body);
@@ -106,15 +55,48 @@ router.post('', async (req: any, res: any) => {
 router.get('/:categoryId', async (req: any, res: any) => {
     try {
         var items: ProductType[] = [];
-        await database().ref('TblProductType')
-            .orderByChild('CategoryID').equalTo(req.params.categoryId)
-            .once('value', (snap) => {
-                snap.forEach(child => {
-                    var item = new ProductType(child.key, child.val())
-                    items.push(item);
+        const { page } = req.query;
+        console.log('I am here: ' + page)
+        const { categoryId } = req.params;
+        if (parseInt(page) != 0) {
+            await database().ref('TblProductType')
+                .orderByChild('CategoryID').equalTo(categoryId)
+                .limitToLast(parseInt(page) * 5).once('value', async (snap) => {
+                    snap.forEach(child => {
+                        var item = new ProductType(child.key, child.val())
+                        items.push(item);
+                    })
+                    var length = 0;
+                    await database().ref('TblProductType')
+                        .orderByChild('CategoryID').equalTo(categoryId)
+                        .once('value', (val) => length = val.numChildren())
+                    var temp = items;
+                    for (let i = 0; i < temp.length; i++) {
+                        const length = await ProtypeCheck(temp[i].key)
+                        if (length == 0) {
+                            items = items.filter(e => e.key !== temp[i].key)
+                        }
+                    }
+                    return res.status(200).json({
+                        succeed: true,
+                        list: items.reverse(),
+                        length: length,
+                    });
                 })
-            })
-        return res.status(200).json(items);
+        } else {
+            await database().ref('TblProductType')
+                .orderByChild('CategoryID').equalTo(categoryId)
+                .once('value', (snap) => {
+                    snap.forEach(child => {
+                        var item = new ProductType(child.key, child.val())
+                        items.push(item);
+                    })
+                })
+            return res.status(200).json({
+                succeed: true,
+                list: items
+            });
+        }
     } catch (error) {
         return res.status(500).send(error);
     }
@@ -133,7 +115,10 @@ router.get('/:categoryId/:brandId', async (req: any, res: any) => {
                     }
                 })
             })
-        return res.status(200).json(items);
+        return res.status(200).json({
+            succeed: true,
+            list: items
+        });
     } catch (error) {
         return res.status(500).send(error);
     }

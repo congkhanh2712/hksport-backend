@@ -84,15 +84,24 @@ router.get('/list/liked', async (req: any, res: any) => {
             .then(async (decodeToken) => {
                 var items: SeenProduct[] = [];
                 var length = 0;
-                await database().ref('TblCustomer').child(decodeToken.uid).child('Seen')
-                    .orderByChild('Liked').equalTo(true)
-                    .limitToLast(parseInt(req.query.page) * 6)
-                    .once('value', (snapshot) => {
-                        console.log(snapshot.val())
-                        snapshot.forEach((child) => {
-                            items.push(new SeenProduct(child.key, child.val()));
+                if (parseInt(req.query.page) != 0) {
+                    await database().ref('TblCustomer').child(decodeToken.uid).child('Seen')
+                        .orderByChild('Liked').equalTo(true)
+                        .limitToLast(parseInt(req.query.page) * 6)
+                        .once('value', (snapshot) => {
+                            snapshot.forEach((child) => {
+                                items.push(new SeenProduct(child.key, child.val()));
+                            })
                         })
-                    })
+                } else {
+                    await database().ref('TblCustomer').child(decodeToken.uid).child('Seen')
+                        .orderByChild('Liked').equalTo(true)
+                        .once('value', (snapshot) => {
+                            snapshot.forEach((child) => {
+                                items.push(new SeenProduct(child.key, child.val()));
+                            })
+                        })
+                }
                 await database().ref('TblCustomer').child(decodeToken.uid).child('Seen')
                     .orderByChild('Liked').equalTo(true)
                     .once('value', (snapshot) => {
@@ -119,19 +128,30 @@ router.get('/list/seen', async (req: any, res: any) => {
             .then(async (decodeToken) => {
                 var items: SeenProduct[] = [];
                 var length = 0;
-                await database().ref('TblCustomer').child(decodeToken.uid).child('Seen')
-                    .orderByChild('Remove').equalTo(false)
-                    .limitToLast(parseInt(req.query.page) * 6)
-                    .once('value', (snapshot) => {
-                        snapshot.forEach((child) => {
-                            items.push(new SeenProduct(child.key, child.val()));
+                if (parseInt(req.query.page) != 0) {
+                    await database().ref('TblCustomer').child(decodeToken.uid).child('Seen')
+                        .orderByChild('Remove').equalTo(false)
+                        .limitToLast(parseInt(req.query.page) * 6)
+                        .once('value', (snapshot) => {
+                            snapshot.forEach((child) => {
+                                items.push(new SeenProduct(child.key, child.val()));
+                            })
                         })
-                    })
+                } else {
+                    await database().ref('TblCustomer').child(decodeToken.uid).child('Seen')
+                        .orderByChild('Remove').equalTo(false)
+                        .once('value', (snapshot) => {
+                            snapshot.forEach((child) => {
+                                items.push(new SeenProduct(child.key, child.val()));
+                            })
+                        })
+                }
                 await database().ref('TblCustomer').child(decodeToken.uid).child('Seen')
                     .orderByChild('Remove').equalTo(false)
                     .once('value', (snapshot) => {
                         length = snapshot.numChildren();
                     })
+                console.log(items.reverse())
                 return res.status(200).json({
                     succeed: true,
                     list: items.reverse(),

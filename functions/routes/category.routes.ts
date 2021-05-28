@@ -13,6 +13,7 @@ router.get('', async (req: any, res: any) => {
                 items.push(item);
             })
         })
+        res.setHeader('Access-Control-Allow-Origin','*')
         return res.status(200).json(items.reverse());
     } catch (error) {
         return res.status(500).send(error);

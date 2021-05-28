@@ -5,8 +5,9 @@ var cors = require('cors');
 
 
 admin.initializeApp({
-    credential: admin.credential.cert('./src/permissions.json'),
-    databaseURL: "https://tlcnproject.firebaseio.com",
+  credential: admin.credential.cert('./src/permissions.json'),
+  databaseURL: "https://tlcnproject.firebaseio.com",
+  storageBucket: "gs://tlcnproject.appspot.com"
 })
 
 

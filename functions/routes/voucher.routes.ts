@@ -27,6 +27,10 @@ router.post('', async (req: any, res: any) => {
                 title: req.body.Name,
                 imageUrl: req.body.Icon,
             },
+            data: {
+                type: 'Voucher',
+                id: '',
+            },
             tokens: tokens
         }).then(() => {
             return res.status(200).json({
@@ -97,13 +101,22 @@ router.get('/all', async (req: any, res: any) => {
             .once('value', async (snapshot) => {
                 length = snapshot.numChildren();
             })
-        await database().ref('TblVoucher')
-            .limitToLast(parseInt(req.query.page) * 10)
-            .once('value', async (snapshot) => {
-                snapshot.forEach((childSnapshot) => {
-                    items.push(new Voucher(childSnapshot.key, childSnapshot.val()))
-                });
-            })
+        if (parseInt(req.query.page) != 0) {
+            await database().ref('TblVoucher')
+                .limitToLast(parseInt(req.query.page) * 10)
+                .once('value', async (snapshot) => {
+                    snapshot.forEach((childSnapshot) => {
+                        items.push(new Voucher(childSnapshot.key, childSnapshot.val()))
+                    });
+                })
+        } else {
+            await database().ref('TblVoucher')
+                .once('value', async (snapshot) => {
+                    snapshot.forEach((childSnapshot) => {
+                        items.push(new Voucher(childSnapshot.key, childSnapshot.val()))
+                    });
+                })
+        }
         return res.status(200).json({
             succeed: true,
             list: items.reverse(),
