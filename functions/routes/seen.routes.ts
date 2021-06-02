@@ -151,7 +151,6 @@ router.get('/list/seen', async (req: any, res: any) => {
                     .once('value', (snapshot) => {
                         length = snapshot.numChildren();
                     })
-                console.log(items.reverse())
                 return res.status(200).json({
                     succeed: true,
                     list: items.reverse(),

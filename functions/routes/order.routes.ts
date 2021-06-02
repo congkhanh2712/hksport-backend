@@ -52,27 +52,39 @@ router.get('/list', async (req: any, res: any) => {
 })
 //Get user's Orders
 router.get('/list/user', async (req: any, res: any) => {
-    const { page, status } = req.query;
+    const { page, status, prevpage } = req.query;
+    var temp = parseInt(prevpage);
     try {
         auth().verifyIdToken(req.headers['x-access-token'], true)
             .then(async (decodeToken) => {
                 var items: Order[] = [];
                 var length = 0;
+                await database().ref('TblOrder')
+                    .orderByChild('User').equalTo(decodeToken.uid)
+                    .once('value', (data) => {
+                        length = data.numChildren();
+                    })
                 if (page != 0) {
-                    await database().ref('TblOrder')
-                        .limitToLast(parseInt(page) * 5)
-                        .orderByChild('User').equalTo(decodeToken.uid)
-                        .once('value', (data: any) => {
-                            data.forEach((snap: any) => {
-                                if (status.toLowerCase() == 'all') {
-                                    items.push(new Order(snap.key, snap.val()));
-                                } else {
-                                    if (snap.val().Status.toLowerCase() == status.toLowerCase()) {
+                    for (let i = temp; i <= temp; i++) {
+                        items = [];
+                        await database().ref('TblOrder')
+                            .limitToLast(temp * 5)
+                            .orderByChild('User').equalTo(decodeToken.uid)
+                            .once('value', (data: any) => {
+                                data.forEach((snap: any) => {
+                                    if (status.toLowerCase() == 'all') {
                                         items.push(new Order(snap.key, snap.val()));
+                                    } else {
+                                        if (snap.val().Status.toLowerCase() == status.toLowerCase()) {
+                                            items.push(new Order(snap.key, snap.val()));
+                                        }
                                     }
-                                }
+                                })
                             })
-                        })
+                        if (items.length < page * 5 && temp * 5 < length) {
+                            temp = temp + 1
+                        }
+                    }
                 } else {
                     await database().ref('TblOrder')
                         .orderByChild('User').equalTo(decodeToken.uid)
@@ -142,15 +154,11 @@ router.get('/list/user', async (req: any, res: any) => {
                         })
                     items[i].timeline = timeline;
                 }
-                await database().ref('TblOrder')
-                    .orderByChild('User').equalTo(decodeToken.uid)
-                    .once('value', (data) => {
-                        length = data.numChildren();
-                    })
                 return res.status(200).json({
                     succeed: true,
                     list: items.reverse(),
-                    length: length
+                    length: length,
+                    prevpage: temp,
                 });
             }).catch((error) => {
                 return res.status(401).json({
@@ -232,7 +240,7 @@ router.put('/detail/:id', async (req: any, res: any) => {
             .child(req.params.id).update(req.body);
         var order: any;
         var user: any;
-        if (req.body.Status != 'Đã hủy') {
+        if (req.body.Status != undefined && req.body.Status != 'Đã hủy') {
             var oldStatus = '';
             switch (req.body.Status) {
                 case 'Đang giao': {
@@ -379,7 +387,7 @@ router.post('/create', async (req: any, res: any) => {
                     PointUsed: pointUsed,
                     TotalPrice: money + shipmoney - discount - pointUsed,
                     Note: note,
-                    Rating: false,
+                    Rating: 0,
                     Voucher: km,
                     Comment: "",
                 }).key;

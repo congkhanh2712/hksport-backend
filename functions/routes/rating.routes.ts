@@ -35,15 +35,16 @@ router.get('/:pid', async (req: any, res: any) => {
             })
     }
     for (let i = 0; i < items.length; i++) {
-        await db.ref('TblCustomer').child(items[i].User).child('Name')
+        await db.ref('TblCustomer').child(items[i].User)
             .once('value', (data) => {
-                items[i].username = data.val();
+                items[i].username = data.val().Name;
+                items[i].avatar = data.val().Avatar;
             })
     }
     return res.status(200).json({
         succeed: true,
         length: length,
-        list: items,
+        list: items.reverse(),
     });
 })
 //Get product's rating overview
@@ -201,9 +202,10 @@ router.get('/detail/:rid', async (req: any, res: any) => {
                 var item = new Rating(snapshot.key, snapshot.val())
                 items.push(item)
             })
-        await db.ref('TblCustomer').child(items[0].User).child('Name')
+        await db.ref('TblCustomer').child(items[0].User)
             .once('value', (data) => {
-                items[0].Username = data.val();
+                items[0].username = data.val().Name;
+                items[0].avatar = data.val().Avatar;
             })
         return res.status(200).json({
             succeed: true,
@@ -280,7 +282,8 @@ router.post('/replied/:rid', async (req: any, res: any) => {
 })
 //Add new ratings
 router.post('/add/:oid', async (req: any, res: any) => {
-    const { orderdetail } = req.body;
+    const { orderdetail, images } = req.body;
+    console.log(orderdetail)
     try {
         auth().verifyIdToken(req.headers['x-access-token'], true)
             .then(async (decodeToken) => {
@@ -294,39 +297,45 @@ router.post('/add/:oid', async (req: any, res: any) => {
                     minutes = '0' + today.getMinutes();
                 }
 
-                for (let i = 0; i < orderdetail.length; i++) {
-                    let rating = 5;
-                    if (orderdetail[i].Rating != 0) {
-                        rating = orderdetail[i].Rating;
-                    }
-                    database().ref('TblRating').once('value', (snapshot) => {
-                        var items: any[] = [];
-                        snapshot.forEach((child) => {
-                            if (child.val().ProductID == orderdetail[i].ProductID) {
-                                items.push(child.val().Rating);
-                            }
-                        })
-                        var rate = rating;
-                        for (let i = 0; i < items.length; i++) {
-                            rate = rate + items[i];
-                        }
-                        rate = rate / (items.length + 1);
-                        database().ref('TblProduct').child(orderdetail[i].ProductID).update({
-                            Rating: rate,
-                        })
-                    }).then(() => {
-                        database().ref('TblRating').push({
-                            ProductID: orderdetail[i].ProductID,
-                            Size: orderdetail[i].Size,
-                            Date: today.getDate() + '/' + (today.getMonth() + 1) + '/' + today.getFullYear(),
-                            Time: today.getHours() + ':' + minutes + ':' + second,
-                            User: decodeToken.uid,
-                            Rating: rating,
-                            Comment: orderdetail[i].Comment,
-                            OrderId: req.params.oid,
-                        })
-                    })
+                let rating = 5;
+                var comment = ''
+                if (orderdetail.Rating != undefined) {
+                    rating = orderdetail.Rating;
                 }
+                if (orderdetail.Comment != undefined) {
+                    comment = orderdetail.Comment;
+                }
+                database().ref('TblRating').once('value', (snapshot) => {
+                    var items: any[] = [];
+                    snapshot.forEach((child) => {
+                        if (child.val().ProductID == orderdetail.ProductID) {
+                            items.push(child.val().Rating);
+                        }
+                    })
+                    var rate = rating;
+                    for (let i = 0; i < items.length; i++) {
+                        rate = rate + items[i];
+                    }
+                    rate = rate / (items.length + 1);
+                    database().ref('TblProduct').child(orderdetail.ProductID).update({
+                        Rating: rate,
+                    })
+                })
+                var newId = database().ref('TblRating').push({
+                    ProductID: orderdetail.ProductID,
+                    Size: orderdetail.Size,
+                    Date: today.getDate() + '/' + (today.getMonth() + 1) + '/' + today.getFullYear(),
+                    Time: today.getHours() + ':' + minutes + ':' + second,
+                    User: decodeToken.uid,
+                    Rating: rating,
+                    Comment: comment,
+                    OrderId: req.params.oid,
+                }).key;
+                images.forEach((e: any,index: number) => {
+                    database().ref('TblRating')
+                        .child(newId as string).child('Images').child('Image' + index)
+                        .set(e)
+                })
                 return res.status(200).json({
                     succeed: true,
                     message: 'Đã thêm bình luận'

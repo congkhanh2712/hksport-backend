@@ -26,6 +26,7 @@ const seenRouter = require('../routes/seen.routes');
 const imageRouter = require('../routes/image.routes');
 const messageRouter = require('../routes/message.routes');
 const notificationRouter = require('../routes/notification.routes');
+const mailRouter = require('../routes/mail.routes');
 
 
 
@@ -46,6 +47,7 @@ app.use('/api/seen', seenRouter);
 app.use('/api/image', imageRouter);
 app.use('/api/message', messageRouter);
 app.use('/api/notification', notificationRouter);
+app.use('/api/mail', mailRouter);
 app.use(cors());
 
 

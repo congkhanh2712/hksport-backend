@@ -11,6 +11,8 @@ export default class Rating {
     Time: string;
     User: string;
     Username = '';
+    Images = {};
+    Avatar = '';
     constructor(key: string | null, val: any) {
         this.key = key;
         this.Comment = val.Comment;
@@ -27,11 +29,22 @@ export default class Rating {
         if (val.Replied != undefined) {
             this.Replied = val.Replied;
         }
+        if (val.Images != undefined) {
+            this.Images = val.Images;
+        }
     }
-    public get username(){
+    public get username() {
         return this.Username;
     }
-    public set username(name: string){
+    public set username(name: string) {
         this.Username = name;
+    }
+    public get avatar() {
+        return this.Avatar;
+    }
+    public set avatar(link: string) {
+        if (link != undefined) {
+            this.Avatar = link;
+        }
     }
 }
