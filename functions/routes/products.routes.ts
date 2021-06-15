@@ -26,8 +26,21 @@ router.get('', async (req: any, res: any) => {
 //Create Product
 router.post('', async (req: any, res: any) => {
     try {
-        await db.ref('TblProduct').push(req.body);
-        return res.status(204).json()
+        await db.ref('TblProduct').push({
+            Brand: req.body.brand,
+            
+        }).then((id)=>{
+            return res.status(200).json({
+                succeed: true,
+                message: "Thêm sản phẩm thành công",
+                key: id.key
+            })
+        }).catch(err =>{
+            return res.status(200).json({
+                succeed: false,
+                message: err
+            })
+        })
     } catch (error) {
         return res.status(500).send(error);
     }

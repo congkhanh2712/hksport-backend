@@ -13,7 +13,7 @@ export default class Product {
     Rating: number;
     Source: string;
     Sold: number;
-    Size = {};
+    Size:number | Object = {};
     constructor(key: string | null, val: any) {
         this.key = key;
         this.Name = val.Name;

@@ -120,10 +120,12 @@ router.post('/forget-password', async (req: any, res: any) => {
 //Get Current User
 router.get('', async (req: any, res: any) => {
     try {
-        auth().verifyIdToken(req.headers['x-access-token'], true)
+        var token = '';
+        token = req.headers['x-access-token'];
+        auth().verifyIdToken(token, true)
             .then(async (decodeToken) => {
                 await database().ref('TblCustomer').child(decodeToken.uid).once('value', async (snap) => {
-                    let user = new User(snap.val());
+                    let user = new User(snap.key as string, snap.val());
                     user.email = decodeToken.email;
                     if (snap.val().Role != 'Admin') {
                         await database().ref('TblRole').child(snap.val().Role).once('value', child => {

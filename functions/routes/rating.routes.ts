@@ -5,6 +5,21 @@ const { Router } = require('express');
 const router = Router();
 const db = database()
 
+
+
+router.get('', async (req: any, res: any) => {
+    var items: Rating[] = [];
+    await db.ref('TblRating').once("value", (snapshot) => {
+        snapshot.forEach(function (child) {
+            var item = new Rating(child.key, child.val());
+            items.push(item);
+        });
+    })
+    return res.status(200).json({
+        succeed: true,
+        list: items.reverse(),
+    });
+})
 //Get product's rating length
 router.get('/:pid', async (req: any, res: any) => {
     var length = 0;
@@ -331,7 +346,7 @@ router.post('/add/:oid', async (req: any, res: any) => {
                     Comment: comment,
                     OrderId: req.params.oid,
                 }).key;
-                images.forEach((e: any,index: number) => {
+                images.forEach((e: any, index: number) => {
                     database().ref('TblRating')
                         .child(newId as string).child('Images').child('Image' + index)
                         .set(e)

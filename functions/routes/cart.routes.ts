@@ -127,7 +127,10 @@ router.put('', async (req: any, res: any) => {
 })
 //Get user's cart length
 router.get('/length', async (req: any, res: any) => {
-    auth().verifyIdToken(req.headers['x-access-token'], true)
+    var token = '';
+    token = req.headers['x-access-token'];
+    console.log(req.headers['x-access-token'])
+    auth().verifyIdToken(token, true)
         .then(async (decodeToken) => {
             var length = 0;
             await db.ref('TblCart').child(decodeToken.uid).once('value', (snapshot) => {

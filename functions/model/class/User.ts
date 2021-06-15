@@ -1,4 +1,5 @@
 export default class User {
+    uid: string;
     Name: string;
     Phone_Number: string;
     Email = '';
@@ -11,7 +12,8 @@ export default class User {
     Color = '';
     CreateDate = '';
     Avatar = '';
-    constructor(val: any) {
+    constructor(key: string, val: any) {
+        this.uid = key;
         this.Name = val.Name;
         this.Phone_Number = val.Phone_Number;
         this.Point = val.Point;
