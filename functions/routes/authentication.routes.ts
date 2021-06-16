@@ -260,6 +260,64 @@ router.put('/info/device-token', async (req: any, res: any) => {
         return res.status(500).send(error);
     }
 })
+//Get User by id
+router.get('/:uid', async (req: any, res: any) => {
+    try {
+        var token = '';
+        token = req.headers['x-access-token'];
+        auth().verifyIdToken(token, true)
+            .then(async (decodeToken) => {
+                var role = '';
+                var item = {
+                    email: '',
+                    createdate: '',
+                    order: 0,
+                    seen: 0,
+                    liked: 0,
+                };
+                await database().ref('TblCustomer').child(decodeToken.uid)
+                    .child('Role').once('value', val => {
+                        role = val.val();
+                    })
+                if (role == 'Admin') {
+                    await auth().getUser(req.params.uid).then(res => {
+                        item.createdate = res.metadata.creationTime;
+                        item.email = res.email as string;
+                    })
+                    await database().ref('TblCustomer').child(req.params.uid)
+                        .child('Seen').once('value', val => {
+                            item.seen = val.numChildren();
+                        })
+                    await database().ref('TblCustomer')
+                        .child(req.params.uid).child('Seen')
+                        .orderByChild('Liked').equalTo(true)
+                        .once('value', val => {
+                            item.liked = val.numChildren();
+                        })
+                    await database().ref('TblOrder')
+                        .orderByChild('User').equalTo(req.params.uid)
+                        .once('value', val => {
+                            item.order = val.numChildren();
+                        })
+                        return res.status(200).json({
+                            succeed: true,
+                            information: item,
+                        });
+                } else {
+                    return res.status(403).json({
+                        message: "Forbiden"
+                    });
+                }
+            }).catch((error) => {
+                return res.status(401).json({
+                    code: error.errorInfo.code
+                });
+            })
+    } catch (error) {
+        return res.status(500).send(error);
+    }
+})
+
 
 
 

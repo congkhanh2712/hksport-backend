@@ -26,16 +26,34 @@ router.get('', async (req: any, res: any) => {
 //Create Product
 router.post('', async (req: any, res: any) => {
     try {
+        var size;
+        if (isNaN(parseInt(req.body.size)) == true) {
+            size = req.body.size;
+        } else {
+            size = parseInt(req.body.size);
+        }
         await db.ref('TblProduct').push({
-            Brand: req.body.brand,
-            
-        }).then((id)=>{
+            BrandID: req.body.brand,
+            CategoryID: req.body.category,
+            Color: req.body.color,
+            CompetitionID: req.body.competition,
+            Description: req.body.description,
+            Image: req.body.image,
+            Material: req.body.material,
+            Name: req.body.name,
+            Price: parseInt(req.body.price),
+            Product_Type: req.body.type,
+            Rating: 0,
+            Size: size,
+            Sold: 0,
+            Source: req.body.source,
+        }).then((id) => {
             return res.status(200).json({
                 succeed: true,
                 message: "Thêm sản phẩm thành công",
                 key: id.key
             })
-        }).catch(err =>{
+        }).catch(err => {
             return res.status(200).json({
                 succeed: false,
                 message: err
