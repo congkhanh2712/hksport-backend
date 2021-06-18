@@ -140,7 +140,7 @@ router.post('/admin', async (req: any, res: any) => {
 router.put('/admin', async (req: any, res: any) => {
     try {
         await database().ref('TblMessage')
-            .child(req.params.uid)
+            .child(req.body.uid)
             .orderByChild('isMe').equalTo(true)
             .once('value', snap => {
                 snap.forEach((child) => {
@@ -189,6 +189,10 @@ router.get('/last-message', async (req: any, res: any) => {
         return res.status(500).send(error);
     }
 })
+function sortMessagelist(list: Array<any>) {
+    list.sort((a, b) => b.lastmessage.Time - a.lastmessage.Time)
+    return list;
+}
 //Get a conversation
 router.get('/admin/list', async (req: any, res: any) => {
     try {
@@ -232,7 +236,48 @@ router.get('/admin/list', async (req: any, res: any) => {
                     }
                     return res.status(200).json({
                         succeed: true,
+                        list: sortMessagelist(items),
+                    });
+                } else {
+                    return res.status(403).json({
+                        message: "Forbiden"
+                    });
+                }
+            }).catch((error) => {
+                return res.status(401).json({
+                    code: error.errorInfo.code
+                });
+            })
+    } catch (error) {
+        return res.status(500).send(error);
+    }
+})
+//Get a conversation by id
+router.get('/:uid', async (req: any, res: any) => {
+    const { page } = req.query;
+    try {
+        auth().verifyIdToken(req.headers['x-access-token'], true)
+            .then(async (decodeToken) => {
+                var items: Message[] = [];
+                var role = '';
+                var length = 0;
+                await database().ref('TblCustomer').child(decodeToken.uid)
+                    .child('Role').once('value', val => {
+                        role = val.val();
+                    })
+                if (role == 'Admin') {
+                    await database().ref('TblMessage').child(req.params.uid).limitToLast(page * 15).once('value', (snap) => {
+                        snap.forEach((child) => {
+                            items.push(new Message(child.key, child.val()))
+                        })
+                    })
+                    await database().ref('TblMessage').child(req.params.uid).once('value', (snap) => {
+                        length = snap.numChildren();
+                    })
+                    return res.status(200).json({
+                        succeed: true,
                         list: items.reverse(),
+                        length
                     });
                 } else {
                     return res.status(403).json({

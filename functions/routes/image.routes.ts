@@ -1,5 +1,5 @@
 import { database } from "firebase-admin";
-import Image from '../model/class/Rating';
+import Image from '../model/class/Image';
 
 const { Router } = require('express');
 const router = Router();
@@ -12,7 +12,7 @@ router.get('/:pid', async (req: any, res: any) => {
         .orderByChild('Product_id').equalTo(req.params.pid)
         .once('value', (snapshot) => {
             snapshot.forEach(child => {
-                items.push(new Image(child.key, child.val()));
+                items.push(new Image(child.key as string, child.val()));
             })
         })
     return res.status(200).json({
