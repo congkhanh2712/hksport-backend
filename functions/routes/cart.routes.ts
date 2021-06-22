@@ -92,6 +92,7 @@ router.delete('', async (req: any, res: any) => {
 router.put('', async (req: any, res: any) => {
     try {
         const { pid, size, quantity } = req.body;
+        console.log(pid + ' - ' + size + ' - ' + quantity)
         if (quantity == 0) {
             auth().verifyIdToken(req.headers['x-access-token'], true)
                 .then(async (decodeToken) => {
@@ -106,10 +107,11 @@ router.put('', async (req: any, res: any) => {
                     });
                 })
         } else {
-            auth().verifyIdToken(req.params.token, true)
+            auth().verifyIdToken(req.headers['x-access-token'], true)
                 .then(async (decodeToken) => {
                     db.ref('TblCart').child(decodeToken.uid).child(pid + size).update({
-                        Quantity: quantity
+                        Quantity: quantity,
+			Time: database.ServerValue.TIMESTAMP,
                     });
                     return res.status(200).json({
                         succeed: true,
