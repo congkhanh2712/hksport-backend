@@ -127,6 +127,7 @@ router.get('/replied/:pid', async (req: any, res: any) => {
                         detail: child.val(),
                         Username: '',
                         isMe: false,
+                        Avatar: '',
                     })
                 })
             })
@@ -139,14 +140,17 @@ router.get('/replied/:pid', async (req: any, res: any) => {
                         detail: child.val(),
                         Username: '',
                         isMe: false,
+                        Avatar: '',
                     })
                 })
             })
     }
     for (let i = 0; i < items.length; i++) {
-        await db.ref('TblCustomer').child(items[i].detail.User).child('Name')
+        await db.ref('TblCustomer').child(items[i].detail.User)
             .once('value', (data) => {
-                items[i].Username = data.val();
+                console.log(items[i].detail.User + ' - ' + data.val().Name)
+                items[i].Username = data.val().Name;
+                items[i].Avatar = data.val().Avatar;
             })
         if (req.headers['x-access-token'] != null) {
             await auth().verifyIdToken(req.headers['x-access-token'], true)
