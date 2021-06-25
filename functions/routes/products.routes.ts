@@ -230,14 +230,25 @@ router.put('', async (req: any, res: any) => {
                     Sold: sold + orderdetail[i].Quantity
                 })
                 var nowquantity = 0
-                await database().ref('TblProduct')
-                    .child(orderdetail[i].ProductID).child('Size').child(orderdetail[i].Size)
-                    .once('value', data => {
-                        nowquantity = data.val();
-                    })
-                database().ref('TblProduct').
-                    child(orderdetail[i].ProductID).child('Size').child(orderdetail[i].Size).
-                    set(nowquantity - orderdetail[i].Quantity);
+                if (orderdetail[i].Size != '') {
+                    await database().ref('TblProduct')
+                        .child(orderdetail[i].ProductID).child('Size').child(orderdetail[i].Size)
+                        .once('value', data => {
+                            nowquantity = data.val();
+                        })
+                    database().ref('TblProduct').
+                        child(orderdetail[i].ProductID).child('Size').child(orderdetail[i].Size)
+                        .set(nowquantity - orderdetail[i].Quantity);
+                } else {
+                    await database().ref('TblProduct')
+                        .child(orderdetail[i].ProductID).child('Size')
+                        .once('value', data => {
+                            nowquantity = data.val();
+                        })
+                    database().ref('TblProduct').
+                        child(orderdetail[i].ProductID).child('Size')
+                        .set(nowquantity - orderdetail[i].Quantity);
+                }
             }
         } else {
             for (let i = 0; i < orderdetail.length; i++) {
@@ -249,20 +260,31 @@ router.put('', async (req: any, res: any) => {
                     Sold: sold - orderdetail[i].Quantity
                 })
                 var nowquantity = 0
-                await database().ref('TblProduct')
-                    .child(orderdetail[i].ProductID).child('Size').child(orderdetail[i].Size)
-                    .once('value', data => {
-                        nowquantity = data.val();
-                    })
-                database().ref('TblProduct').
-                    child(orderdetail[i].ProductID).child('Size').child(orderdetail[i].Size).
-                    set(nowquantity + orderdetail[i].Quantity);
+                if (orderdetail[i].Size != '') {
+                    await database().ref('TblProduct')
+                        .child(orderdetail[i].ProductID).child('Size').child(orderdetail[i].Size)
+                        .once('value', data => {
+                            nowquantity = data.val();
+                        })
+                    database().ref('TblProduct').
+                        child(orderdetail[i].ProductID).child('Size').child(orderdetail[i].Size)
+                        .set(nowquantity + orderdetail[i].Quantity);
+                } else {
+                    await database().ref('TblProduct')
+                        .child(orderdetail[i].ProductID).child('Size')
+                        .once('value', data => {
+                            nowquantity = data.val();
+                        })
+                    database().ref('TblProduct').
+                        child(orderdetail[i].ProductID).child('Size')
+                        .set(nowquantity + orderdetail[i].Quantity);
+                }
             }
-            return res.status(200).json({
-                succeed: true,
-                message: "Update thành công"
-            });
         }
+        return res.status(200).json({
+            succeed: true,
+            message: "Update thành công"
+        });
     } catch (error) {
         return res.status(500).send(error);
     }

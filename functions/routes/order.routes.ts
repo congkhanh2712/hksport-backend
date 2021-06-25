@@ -359,7 +359,7 @@ router.put('/received/:id', async (req: any, res: any) => {
 router.post('/create', async (req: any, res: any) => {
     try {
         const { payment, paystatus, shiptype, cartItems,
-            shipmoney, money, discount, benefit, pointUsed,
+            shipmoney, money, discount, benefit, pointUsed, pointAvailable,
             note, km, name, phone, city, address, ward, district } = req.body;
         auth().verifyIdToken(req.headers['x-access-token'], true)
             .then(async (decodeToken) => {
@@ -371,6 +371,21 @@ router.post('/create', async (req: any, res: any) => {
                 }
                 if (today.getMinutes() < 10) {
                     minutes = '0' + today.getMinutes();
+                }
+                database().ref('TblCustomer').child(decodeToken.uid).update({
+                    PointAvailable: pointAvailable - pointUsed,
+                })
+                if (km != '') {
+                    database().ref('TblVoucher')
+                        .orderByChild('Code').equalTo(km)
+                        .once('value', snap => {
+                            snap.forEach(child => {
+                                if (child.val().Limited != -1 && child.val().Limited != 0) {
+                                    database().ref('TblVoucher').child(child.key as string)
+                                        .child('Limited').set(child.val().Limited - 1);
+                                }
+                            })
+                        })
                 }
                 var orderkey = database().ref('TblOrder').push({
                     Payments: payment,
