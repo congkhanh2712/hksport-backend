@@ -117,7 +117,7 @@ router.get('/axes', async (req: any, res: any) => {
                             if (year == returnDay(child.val().OrderDate).year) {
                                 result[0].all++;
                                 result[returnDay(child.val().OrderDate).month].all++;
-                                if (child.val().Status != 'Đã hủy') {
+                                if (child.val().Status == 'Đã hủy') {
                                     result[0].cancel++;
                                     result[returnDay(child.val().OrderDate).month].cancel++;
                                 }

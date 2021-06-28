@@ -13,6 +13,7 @@ export default class Voucher {
     Role: string;
     Time: number;
     ValidFrom: number;
+    InitQuantity: number;
     constructor(key: string | null, val: any) {
         this.key = key;
         this.Code = val.Code;
@@ -28,5 +29,10 @@ export default class Voucher {
         this.Role = val.Role;
         this.Time = parseInt(val.Time);
         this.ValidFrom = parseInt(val.ValidFrom);
+        if (val.InitQuantity == undefined) {
+            this.InitQuantity = parseInt(val.Limited);
+        } else {
+            this.InitQuantity = val.InitQuantity
+        }
     }
 }
