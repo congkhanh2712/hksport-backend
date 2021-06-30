@@ -13,6 +13,9 @@ var fbApp = firebase.default.initializeApp({
     appId: "1:471190501995:web:244886b2981b1c36cc0f2e",
     measurementId: "G-ZRM28DF4CB"
 });
+const axios = require('axios').default;
+
+
 //Login
 router.post('/login', async (req: any, res: any) => {
     try {
@@ -26,6 +29,34 @@ router.post('/login', async (req: any, res: any) => {
             return res.status(200).json({
                 succeed: false,
                 message: "Tên đăng nhập hoặc mật khẩu không đúng"
+            });
+        })
+    } catch (error) {
+        return res.status(500).send(error);
+    }
+})
+router.post('/refresh-token', async (req: any, res: any) => {
+    try {
+        axios({
+            method: 'post',
+            url: 'https://securetoken.googleapis.com/v1/token',
+            params: {
+                key: "AIzaSyBf-gNwY6RWVHEwGNC5Vlm5_jkqxICT8sk"
+            },
+            data: {
+                refreshToken: req.body.token,
+                grant_type: "refresh_token"
+            },
+        }).then((response: any) => {
+            console.log(response.data);
+            return res.status(200).json({
+                succeed: true,
+                access_token: response.data.access_token
+            });
+        }).catch((err: any) => {
+            return res.status(200).json({
+                succeed: false,
+                error: err
             });
         })
     } catch (error) {
@@ -94,6 +125,14 @@ router.post('/logout', async (req: any, res: any) => {
                     code: error.errorInfo.code
                 });
             })
+    } catch (error) {
+        return res.status(500).send(error);
+    }
+})
+//Logout
+router.post('/refresh-token', async (req: any, res: any) => {
+    try {
+
     } catch (error) {
         return res.status(500).send(error);
     }
@@ -299,10 +338,10 @@ router.get('/:uid', async (req: any, res: any) => {
                         .once('value', val => {
                             item.order = val.numChildren();
                         })
-                        return res.status(200).json({
-                            succeed: true,
-                            information: item,
-                        });
+                    return res.status(200).json({
+                        succeed: true,
+                        information: item,
+                    });
                 } else {
                     return res.status(403).json({
                         message: "Forbiden"
