@@ -108,6 +108,45 @@ router.post('/register', async (req: any, res: any) => {
         return res.status(500).send(error);
     }
 })
+//Register
+router.post('/fbregister', async (req: any, res: any) => {
+    const { name, phone, address, city, location, district, ward, avatar } = req.body
+    try {
+        auth().verifyIdToken(req.body.token, true).then(async decodeToken => {
+            //Set thông tin khách hàng
+            await database().ref('TblCustomer').child(decodeToken.uid).set({
+                Name: name,
+                Phone_Number: phone,
+                Role: '-MOgFiH4LPenx6Kqq0Nu',
+                PointAvailable: 0,
+                Point: 0,
+                Token: '',
+                Avatar: avatar,
+            })
+            //Set địa chỉ khách hàng
+            await database().ref('TblCustomer').child(decodeToken.uid).child('Address').update({
+                Detail: address,
+                City: city,
+                District: district,
+                Ward: ward,
+                Location: location,
+            });
+            return res.status(200).json({
+                succeed: true,
+                message: 'Đăng ký thành công',
+                user: decodeToken,
+            })
+        }).catch((error: any) => {
+            return res.status(200).json({
+                code: error.errorInfo.code,
+                succeed: false,
+                message: "Đăng kí không thành công",
+            });
+        })
+    } catch (error) {
+        return res.status(500).send(error);
+    }
+})
 //Logout
 router.post('/logout', async (req: any, res: any) => {
     try {
