@@ -292,6 +292,7 @@ router.post('/replied/:rid', async (req: any, res: any) => {
 
             }).catch((error) => {
                 return res.status(401).json({
+                    succeed: false,
                     code: error.errorInfo.code
                 });
             })

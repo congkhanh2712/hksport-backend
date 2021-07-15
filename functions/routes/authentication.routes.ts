@@ -35,6 +35,29 @@ router.post('/login', async (req: any, res: any) => {
         return res.status(500).send(error);
     }
 })
+//Login with credential
+router.post('/facebook-login', async (req: any, res: any) => {
+    try {
+        console.log(req.body.fbToken)
+        const facebookCredential = firebase.default.auth.FacebookAuthProvider.credential(req.body.fbToken)
+        console.log(facebookCredential)
+        fbApp.auth().signInWithCredential(facebookCredential).then(async () => {
+            return res.status(200).json({
+                succeed: true,
+                message: 'Đăng nhập thành công',
+                user: fbApp.auth().currentUser,
+            });
+        }).catch(() => {
+            return res.status(200).json({
+                succeed: false,
+                message: "Đăng nhập thất bại"
+            });
+        });
+    }
+    catch (error) {
+        return res.status(500).send(error);
+    }
+});
 router.post('/refresh-token', async (req: any, res: any) => {
     try {
         axios({
