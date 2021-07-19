@@ -88,8 +88,9 @@ router.get('/liked/:pid', async (req: any, res: any) => {
             }
         })
     var liked = false;
-    if (req.headers['x-access-token'] != null) {
-        await auth().verifyIdToken(req.headers['x-access-token'], true)
+    console.log(req.headers['x-access-token'])
+    if (req.headers['x-access-token'] != 'null') {
+        auth().verifyIdToken(req.headers['x-access-token'], true)
             .then(async (decodeToken) => {
                 await db.ref('TblRating').child(req.params.pid).child('Liked')
                     .child(decodeToken.uid)
@@ -98,12 +99,14 @@ router.get('/liked/:pid', async (req: any, res: any) => {
                             liked = true
                         }
                     })
+            }).catch(err => {
+                console.log(err)
             })
     }
     return res.status(200).json({
         succeed: true,
-        likedNumber: likedNumber,
-        liked: liked,
+        likedNumber,
+        liked,
     });
 })
 //Get replied data of a rating
@@ -152,13 +155,13 @@ router.get('/replied/:pid', async (req: any, res: any) => {
                 items[i].Username = data.val().Name;
                 items[i].Avatar = data.val().Avatar;
             })
-        if (req.headers['x-access-token'] != null) {
+        if (req.headers['x-access-token'] != 'null') {
             await auth().verifyIdToken(req.headers['x-access-token'], true)
                 .then(async (decodeToken) => {
                     if (decodeToken.uid == items[i].detail.User) {
                         items[i].isMe = true
                     }
-                })
+                }).catch(err=> console.log(err))
         }
     }
     return res.status(200).json({
