@@ -274,22 +274,23 @@ router.post('/replied/:rid', async (req: any, res: any) => {
                         }
                     })
                 }
-                messaging().sendMulticast({
-                    notification: {
-                        body: '1 bình luận mới vừa được thêm vào bài viết bạn đang theo dõi',
-                        title: 'Thông báo',
-                    },
-                    data: {
-                        type: 'Comment',
-                        id: req.params.rid,
-                    },
-                    tokens: tokens
-                })
+                if (tokens.length != 0) {
+                    messaging().sendMulticast({
+                        notification: {
+                            body: '1 bình luận mới vừa được thêm vào bài viết bạn đang theo dõi',
+                            title: 'Thông báo',
+                        },
+                        data: {
+                            type: 'Comment',
+                            id: req.params.rid,
+                        },
+                        tokens: tokens
+                    })
+                }
                 return res.status(200).json({
                     succeed: true,
                     message: 'Đã thêm bình luận'
                 });
-
             }).catch((error) => {
                 return res.status(401).json({
                     succeed: false,
