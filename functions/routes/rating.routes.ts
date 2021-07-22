@@ -78,97 +78,107 @@ router.get('/overview/:pid', async (req: any, res: any) => {
 })
 //Get like number of rating
 router.get('/liked/:pid', async (req: any, res: any) => {
-    var likedNumber = 0;
-    await db.ref('TblRating').child(req.params.pid).child('Liked')
-        .once('value', (snapshot) => {
-            if (snapshot.val() != undefined) {
-                likedNumber = snapshot.numChildren();
-            } else {
-                likedNumber = 0;
-            }
-        })
-    var liked = false;
-    console.log(req.headers['x-access-token'])
-    if (req.headers['x-access-token'] != 'null') {
-        auth().verifyIdToken(req.headers['x-access-token'], true)
-            .then(async (decodeToken) => {
-                await db.ref('TblRating').child(req.params.pid).child('Liked')
-                    .child(decodeToken.uid)
-                    .once('value', (snapshot) => {
-                        if (snapshot.val() != undefined) {
-                            liked = true
-                        }
-                    })
-            }).catch(err => {
-                console.log(err)
+    try {
+        var likedNumber = 0;
+        await db.ref('TblRating').child(req.params.pid).child('Liked')
+            .once('value', (snapshot) => {
+                if (snapshot.val() != undefined) {
+                    likedNumber = snapshot.numChildren();
+                } else {
+                    likedNumber = 0;
+                }
             })
+        var liked = false;
+        if (req.headers['x-access-token'] != null) {
+            console.log('/liked/' + req.params.pid + ': have user');
+            auth().verifyIdToken(req.headers['x-access-token'], true)
+                .then(async (decodeToken) => {
+                    await db.ref('TblRating').child(req.params.pid).child('Liked')
+                        .child(decodeToken.uid)
+                        .once('value', (snapshot) => {
+                            if (snapshot.val() != undefined) {
+                                liked = true
+                            }
+                        })
+                }).catch(err => {
+                    console.log(err)
+                })
+        } else {
+            console.log('/liked/' + req.params.pid + ': no user');
+        }
+        return res.status(200).json({
+            succeed: true,
+            likedNumber,
+            liked,
+        });
+    } catch (error) {
+        return res.status(500).send(error);
     }
-    return res.status(200).json({
-        succeed: true,
-        likedNumber,
-        liked,
-    });
 })
 //Get replied data of a rating
 router.get('/replied/:pid', async (req: any, res: any) => {
-    var length = 0;
-    var items: any[] = [];
-    await db.ref('TblRating').child(req.params.pid).child('Replied')
-        .once('value', (snapshot) => {
-            if (snapshot.val() != undefined) {
-                length = snapshot.numChildren();
-            } else {
-                length = 0;
-            }
-        })
-    if (parseInt(req.query.page) != 0) {
-        await db.ref('TblRating').child(req.params.pid).child('Replied')
-            .limitToLast(parseInt(req.query.page) * 6).once('value', (snapshot) => {
-                snapshot.forEach((child) => {
-                    items.push({
-                        key: child.key,
-                        detail: child.val(),
-                        Username: '',
-                        isMe: false,
-                        Avatar: '',
-                    })
-                })
-            })
-    } else {
-        await db.ref('TblRating').child(req.params.pid).child('Replied')
-            .once('value', (snapshot) => {
-                snapshot.forEach((child) => {
-                    items.push({
-                        key: child.key,
-                        detail: child.val(),
-                        Username: '',
-                        isMe: false,
-                        Avatar: '',
-                    })
-                })
-            })
-    }
-    for (let i = 0; i < items.length; i++) {
-        await db.ref('TblCustomer').child(items[i].detail.User)
-            .once('value', (data) => {
-                console.log(items[i].detail.User + ' - ' + data.val().Name)
-                items[i].Username = data.val().Name;
-                items[i].Avatar = data.val().Avatar;
-            })
-        if (req.headers['x-access-token'] != 'null') {
-            await auth().verifyIdToken(req.headers['x-access-token'], true)
-                .then(async (decodeToken) => {
-                    if (decodeToken.uid == items[i].detail.User) {
-                        items[i].isMe = true
+    try {
+        var length = 0;
+        var items: any[] = [];
+        if (req.query.page == 0) {
+            await db.ref('TblRating').child(req.params.pid).child('Replied')
+                .once('value', (snapshot) => {
+                    if (snapshot.val() != undefined) {
+                        length = snapshot.numChildren();
+                        snapshot.forEach((child) => {
+                            items.push({
+                                key: child.key,
+                                detail: child.val(),
+                                Username: '',
+                                isMe: false,
+                                Avatar: '',
+                            })
+                        })
+                    } else {
+                        length = 0;
                     }
-                }).catch(err=> console.log(err))
+                })
+        } else {
+            await db.ref('TblRating').child(req.params.pid).child('Replied')
+                .limitToLast(parseInt(req.query.page) * 6).once('value', (snapshot) => {
+                    snapshot.forEach((child) => {
+                        items.push({
+                            key: child.key,
+                            detail: child.val(),
+                            Username: '',
+                            isMe: false,
+                            Avatar: '',
+                        })
+                    })
+                })
         }
+        for (let i = 0; i < items.length; i++) {
+            await db.ref('TblCustomer').child(items[i].detail.User)
+                .once('value', (data) => {
+                    console.log(items[i].detail.User + ' - ' + data.val().Name)
+                    items[i].Username = data.val().Name;
+                    items[i].Avatar = data.val().Avatar;
+                })
+            if (req.headers['x-access-token'] != null) {
+                console.log('/replied/' + req.params.pid + ': have user');
+                await auth().verifyIdToken(req.headers['x-access-token'], true)
+                    .then(async (decodeToken) => {
+                        if (decodeToken.uid == items[i].detail.User) {
+                            items[i].isMe = true
+                        }
+                    }).catch(err => console.log(err))
+            } else {
+                console.log('/replied/' + req.params.pid + ': no user');
+            }
+        }
+        return res.status(200).json({
+            succeed: true,
+            length: length,
+            list: items.reverse(),
+        });
+    } catch (error) {
+        return res.status(500).send(error);
     }
-    return res.status(200).json({
-        succeed: true,
-        length: length,
-        list: items.reverse(),
-    });
 })
 //Remove a replied
 router.delete('/replied/:rid/:cid', async (req: any, res: any) => {

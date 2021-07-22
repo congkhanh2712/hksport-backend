@@ -5,10 +5,12 @@ var cors = require('cors');
 
 
 admin.initializeApp({
-  credential: admin.credential.cert('./src/permissions.json'),
+  // credential: admin.credential.cert('./src/credentials.json'),
+  credential: admin.credential.applicationDefault(),
   databaseURL: "https://tlcnproject.firebaseio.com",
   storageBucket: "gs://tlcnproject.appspot.com"
 })
+
 
 
 const productRouter = require('../routes/products.routes');
@@ -33,6 +35,7 @@ const chartRouter = require('../routes/chart.routes');
 
 
 const app = express();
+app.use(cors({ origin: true }));
 app.use('/api/order', orderRouter);
 app.use('/api/products', productRouter);
 app.use('/api/cart', cartRouter);
@@ -50,9 +53,6 @@ app.use('/api/message', messageRouter);
 app.use('/api/notification', notificationRouter);
 app.use('/api/mail', mailRouter);
 app.use('/api/chart', chartRouter);
-app.use(cors());
-
-
 
 
 exports.app = functions.https.onRequest(app);
